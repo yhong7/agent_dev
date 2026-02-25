@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="980" height="420" viewBox="0 0 980 420"><style>text{font-family:Arial,sans-serif;font-size:12px}.title{font-size:16px;font-weight:bold}</style>
+<text x="490" y="24" text-anchor="middle" class="title">Gap to lower bound by instance group</text>
+<line x1="80" y1="335" x2="80" y2="45" stroke="black"/>
+<line x1="80" y1="335" x2="960" y2="335" stroke="black"/>
+<line x1="76" y1="335.0" x2="80" y2="335.0" stroke="black"/>
+<text x="72" y="339.0" text-anchor="end">0.00</text>
+<line x1="76" y1="277.0" x2="80" y2="277.0" stroke="black"/>
+<text x="72" y="281.0" text-anchor="end">0.14</text>
+<line x1="76" y1="219.0" x2="80" y2="219.0" stroke="black"/>
+<text x="72" y="223.0" text-anchor="end">0.28</text>
+<line x1="76" y1="161.0" x2="80" y2="161.0" stroke="black"/>
+<text x="72" y="165.0" text-anchor="end">0.42</text>
+<line x1="76" y1="103.0" x2="80" y2="103.0" stroke="black"/>
+<text x="72" y="107.0" text-anchor="end">0.55</text>
+<line x1="76" y1="45.0" x2="80" y2="45.0" stroke="black"/>
+<text x="72" y="49.0" text-anchor="end">0.69</text>
+<rect x="102.0" y="211.9" width="35.2" height="123.1" fill="#e15759"/>
+<rect x="146.0" y="211.9" width="35.2" height="123.1" fill="#59a14f"/>
+<rect x="190.0" y="45.0" width="35.2" height="290.0" fill="#4e79a7"/>
+<text x="168.0" y="355" text-anchor="middle" transform="rotate(20 168.0,355)">BA_scale_free</text>
+<rect x="278.0" y="147.6" width="35.2" height="187.4" fill="#e15759"/>
+<rect x="322.0" y="147.6" width="35.2" height="187.4" fill="#59a14f"/>
+<rect x="366.0" y="114.6" width="35.2" height="220.4" fill="#4e79a7"/>
+<text x="344.0" y="355" text-anchor="middle" transform="rotate(20 344.0,355)">ER_dense</text>
+<rect x="454.0" y="294.0" width="35.2" height="41.0" fill="#e15759"/>
+<rect x="498.0" y="294.0" width="35.2" height="41.0" fill="#59a14f"/>
+<rect x="542.0" y="240.3" width="35.2" height="94.7" fill="#4e79a7"/>
+<text x="520.0" y="355" text-anchor="middle" transform="rotate(20 520.0,355)">ER_sparse</text>
+<rect x="630.0" y="335.0" width="35.2" height="0.0" fill="#e15759"/>
+<rect x="674.0" y="335.0" width="35.2" height="0.0" fill="#59a14f"/>
+<rect x="718.0" y="335.0" width="35.2" height="0.0" fill="#4e79a7"/>
+<text x="696.0" y="355" text-anchor="middle" transform="rotate(20 696.0,355)">Grid_structured</text>
+<rect x="806.0" y="203.2" width="35.2" height="131.8" fill="#e15759"/>
+<rect x="850.0" y="203.2" width="35.2" height="131.8" fill="#59a14f"/>
+<rect x="894.0" y="164.4" width="35.2" height="170.6" fill="#4e79a7"/>
+<text x="872.0" y="355" text-anchor="middle" transform="rotate(20 872.0,355)">WS_small_world</text>
+<rect x="790" y="45" width="14" height="14" fill="#e15759"/>
+<text x="810" y="56">ACO</text>
+<rect x="790" y="65" width="14" height="14" fill="#59a14f"/>
+<text x="810" y="76">GA</text>
+<rect x="790" y="85" width="14" height="14" fill="#4e79a7"/>
+<text x="810" y="96">SA</text>
+<text x="20" y="190.0" transform="rotate(-90 20,190.0)" text-anchor="middle">Gap to lower bound</text>
+</svg>

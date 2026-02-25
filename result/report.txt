@@ -1,0 +1,22 @@
+Vertex Cover 元启发算法实验摘要
+========================================
+BA_scale_free | ACO | time_mean=0.5557s | cover_mean=27.50 | gap_mean=0.2939 | iter_best_mean=1.25
+BA_scale_free | GA | time_mean=0.0808s | cover_mean=27.50 | gap_mean=0.2939 | iter_best_mean=1.00
+BA_scale_free | SA | time_mean=0.0824s | cover_mean=35.75 | gap_mean=0.6924 | iter_best_mean=3.75
+ER_dense | ACO | time_mean=0.7043s | cover_mean=27.50 | gap_mean=0.4474 | iter_best_mean=1.00
+ER_dense | GA | time_mean=0.0987s | cover_mean=27.50 | gap_mean=0.4474 | iter_best_mean=0.00
+ER_dense | SA | time_mean=0.0867s | cover_mean=29.00 | gap_mean=0.5263 | iter_best_mean=0.00
+ER_sparse | ACO | time_mean=0.1796s | cover_mean=17.00 | gap_mean=0.0979 | iter_best_mean=1.00
+ER_sparse | GA | time_mean=0.0313s | cover_mean=17.00 | gap_mean=0.0979 | iter_best_mean=0.00
+ER_sparse | SA | time_mean=0.0232s | cover_mean=19.00 | gap_mean=0.2260 | iter_best_mean=13.25
+Grid_structured | ACO | time_mean=0.9666s | cover_mean=32.00 | gap_mean=0.0000 | iter_best_mean=13.50
+Grid_structured | GA | time_mean=0.1101s | cover_mean=32.00 | gap_mean=0.0000 | iter_best_mean=4.75
+Grid_structured | SA | time_mean=0.0782s | cover_mean=32.00 | gap_mean=0.0000 | iter_best_mean=0.00
+WS_small_world | ACO | time_mean=0.8716s | cover_mean=35.50 | gap_mean=0.3148 | iter_best_mean=2.50
+WS_small_world | GA | time_mean=0.1024s | cover_mean=35.50 | gap_mean=0.3148 | iter_best_mean=1.00
+WS_small_world | SA | time_mean=0.0904s | cover_mean=38.00 | gap_mean=0.4074 | iter_best_mean=0.00
+
+Empirical runtime trend slope (log-log vs edge count):
+- SA: slope=1.121
+- GA: slope=0.976
+- ACO: slope=1.203
