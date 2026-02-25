@@ -8,7 +8,7 @@
 - 5 类输入实例，每类 20 个样本（共 100 个实例）
 - 所有随机实验重复 5 次，记录平均值与方差
 - 指标涵盖：运行时间、解质量（相对匹配下界差距）、稳定性/收敛速度
-- 自动导出 CSV 结果与可视化图表到 `result/`（无 matplotlib 时自动导出 SVG）
+- 自动导出 CSV 结果与可视化图表到 `result/`（默认依赖见 requirements.txt）
 
 ## 1. 问题定义
 给定无向图 \(G=(V,E)\)，求最小顶点覆盖集合 \(C \subseteq V\)，使得任意边 \((u,v)\in E\) 至少有一个端点在 \(C\) 中。
@@ -63,6 +63,7 @@
 
 ## 5. 运行方法
 ```bash
+pip install -r requirements.txt
 python experiment.py
 python analysis.py
 # 快速验证
@@ -72,10 +73,8 @@ python experiment.py --samples-per-group 2 --runs 2
 输出文件在 `result/`：
 - `raw_runs.csv`：每次重复实验的原始数据
 - `summary.csv`：按算法与实例类别聚合后的均值/方差
-- `bar_time_mean.png` / `bar_cover_mean.png` / `bar_gap_mean.png`（若有 matplotlib）
-- `trend_time_vs_edges.png`（若有 matplotlib）
-- `bar_time_mean.svg` / `bar_cover_mean.svg` / `bar_gap_mean.svg`（无 matplotlib 的回退图表）
-- `trend_time_vs_edges.svg`（无 matplotlib 的回退图表）
+- `bar_time_mean.png` / `bar_cover_mean.png` / `bar_gap_mean.png`（本地运行生成，不纳入仓库）
+- `trend_time_vs_edges.png`（本地运行生成，不纳入仓库）
 
 ## 6. 目录结构
 ```text

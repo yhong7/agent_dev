@@ -3,6 +3,8 @@ from __future__ import annotations
 import csv
 import math
 import os
+import struct
+import zlib
 from collections import defaultdict
 from typing import Dict, List, Tuple
 
@@ -14,6 +16,7 @@ except ModuleNotFoundError:
     plt = None
 
 
+# ---------- CSV helpers ----------
 def read_csv(path: str) -> List[Dict[str, str]]:
     with open(path, "r", encoding="utf-8") as f:
         return list(csv.DictReader(f))
@@ -30,6 +33,7 @@ def to_float_rows(rows: List[Dict[str, str]]) -> List[Dict]:
     return out
 
 
+# ---------- text report ----------
 def _write_text_report(summary: List[Dict], raw_rows: List[Dict[str, str]]) -> None:
     path = os.path.join(RESULT_DIR, "report.txt")
     with open(path, "w", encoding="utf-8") as f:
@@ -56,118 +60,128 @@ def _write_text_report(summary: List[Dict], raw_rows: List[Dict[str, str]]) -> N
             f.write(f"- {algo}: slope={b:.3f}\n")
 
 
-def _svg_header(width: int, height: int) -> str:
-    return f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}" viewBox="0 0 {width} {height}">' \
-           '<style>text{font-family:Arial,sans-serif;font-size:12px}.title{font-size:16px;font-weight:bold}</style>'
+# ---------- lightweight PNG fallback (no external deps) ----------
+class SimpleCanvas:
+    def __init__(self, w: int, h: int, bg=(255, 255, 255)):
+        self.w = w
+        self.h = h
+        self.px = [[bg for _ in range(w)] for _ in range(h)]
+
+    def set(self, x: int, y: int, c=(0, 0, 0)):
+        if 0 <= x < self.w and 0 <= y < self.h:
+            self.px[y][x] = c
+
+    def line(self, x1: int, y1: int, x2: int, y2: int, c=(0, 0, 0)):
+        dx = abs(x2 - x1)
+        dy = -abs(y2 - y1)
+        sx = 1 if x1 < x2 else -1
+        sy = 1 if y1 < y2 else -1
+        err = dx + dy
+        x, y = x1, y1
+        while True:
+            self.set(x, y, c)
+            if x == x2 and y == y2:
+                break
+            e2 = 2 * err
+            if e2 >= dy:
+                err += dy
+                x += sx
+            if e2 <= dx:
+                err += dx
+                y += sy
+
+    def rect(self, x: int, y: int, w: int, h: int, c=(0, 0, 0)):
+        for yy in range(y, y + h):
+            for xx in range(x, x + w):
+                self.set(xx, yy, c)
+
+    def circle(self, cx: int, cy: int, r: int, c=(0, 0, 0)):
+        rr = r * r
+        for y in range(cy - r, cy + r + 1):
+            for x in range(cx - r, cx + r + 1):
+                if (x - cx) * (x - cx) + (y - cy) * (y - cy) <= rr:
+                    self.set(x, y, c)
+
+    def save_png(self, path: str):
+        def chunk(tag: bytes, data: bytes) -> bytes:
+            return struct.pack("!I", len(data)) + tag + data + struct.pack("!I", zlib.crc32(tag + data) & 0xFFFFFFFF)
+
+        raw = bytearray()
+        for row in self.px:
+            raw.append(0)
+            for r, g, b in row:
+                raw.extend((r, g, b))
+
+        ihdr = struct.pack("!IIBBBBB", self.w, self.h, 8, 2, 0, 0, 0)
+        data = b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", ihdr) + chunk(b"IDAT", zlib.compress(bytes(raw), 9)) + chunk(b"IEND", b"")
+        with open(path, "wb") as f:
+            f.write(data)
 
 
-def _save_svg(path: str, body: List[str]) -> None:
-    with open(path, "w", encoding="utf-8") as f:
-        f.write("\n".join(body + ["</svg>"]))
-
-
-def _plot_group_bars_svg(summary: List[Dict], metric: str, ylabel: str, filename: str) -> None:
+def _draw_fallback_bars(summary: List[Dict], metric: str, out_name: str):
     groups = sorted({r["group"] for r in summary})
     algos = sorted({r["algorithm"] for r in summary})
-    colors = {"SA": "#4e79a7", "GA": "#59a14f", "ACO": "#e15759"}
+    colors = {"SA": (78, 121, 167), "GA": (89, 161, 79), "ACO": (225, 87, 89)}
 
-    width, height = 980, 420
-    margin_l, margin_r, margin_t, margin_b = 80, 20, 45, 85
-    plot_w = width - margin_l - margin_r
-    plot_h = height - margin_t - margin_b
+    w, h = 980, 420
+    ml, mr, mt, mb = 70, 20, 20, 45
+    pw, ph = w - ml - mr, h - mt - mb
+    c = SimpleCanvas(w, h)
+    c.line(ml, h - mb, ml, mt, (0, 0, 0))
+    c.line(ml, h - mb, w - mr, h - mb, (0, 0, 0))
 
-    max_val = max(r[metric] for r in summary) if summary else 1.0
-    max_val = max(max_val, 1e-9)
+    vmax = max(r[metric] for r in summary) if summary else 1.0
+    vmax = max(vmax, 1e-9)
+    gw = pw / max(len(groups), 1)
+    bw = max(int(gw / (len(algos) + 1) * 0.8), 3)
 
-    elems = [_svg_header(width, height)]
-    elems.append(f'<text x="{width//2}" y="24" text-anchor="middle" class="title">{ylabel} by instance group</text>')
-
-    # axes
-    x0, y0 = margin_l, height - margin_b
-    elems.append(f'<line x1="{x0}" y1="{y0}" x2="{x0}" y2="{margin_t}" stroke="black"/>')
-    elems.append(f'<line x1="{x0}" y1="{y0}" x2="{width-margin_r}" y2="{y0}" stroke="black"/>')
-
-    group_w = plot_w / max(len(groups), 1)
-    bar_w = group_w / (len(algos) + 1)
-
-    # y ticks
-    for i in range(6):
-        v = max_val * i / 5
-        y = y0 - (v / max_val) * plot_h
-        elems.append(f'<line x1="{x0-4}" y1="{y:.1f}" x2="{x0}" y2="{y:.1f}" stroke="black"/>')
-        elems.append(f'<text x="{x0-8}" y="{y+4:.1f}" text-anchor="end">{v:.2f}</text>')
-
-    # bars
     for gi, g in enumerate(groups):
-        gx = x0 + gi * group_w
+        gx = ml + gi * gw
         for ai, algo in enumerate(algos):
             row = next(r for r in summary if r["group"] == g and r["algorithm"] == algo)
             val = row[metric]
-            h = (val / max_val) * plot_h
-            x = gx + (ai + 0.5) * bar_w
-            y = y0 - h
-            elems.append(f'<rect x="{x:.1f}" y="{y:.1f}" width="{bar_w*0.8:.1f}" height="{h:.1f}" fill="{colors.get(algo, "#777")}"/>')
+            bh = int((val / vmax) * ph)
+            x = int(gx + (ai + 0.5) * gw / (len(algos) + 1))
+            y = h - mb - bh
+            c.rect(x, y, bw, bh, colors.get(algo, (120, 120, 120)))
 
-        elems.append(f'<text x="{gx + group_w/2:.1f}" y="{y0+20}" text-anchor="middle" transform="rotate(20 {gx + group_w/2:.1f},{y0+20})">{g}</text>')
-
-    # legend
-    lx = width - margin_r - 170
-    ly = margin_t + 10
-    for i, algo in enumerate(algos):
-        yy = ly + i * 20
-        elems.append(f'<rect x="{lx}" y="{yy-10}" width="14" height="14" fill="{colors.get(algo, "#777")}"/>')
-        elems.append(f'<text x="{lx+20}" y="{yy+1}">{algo}</text>')
-
-    elems.append(f'<text x="20" y="{margin_t + plot_h/2:.1f}" transform="rotate(-90 20,{margin_t + plot_h/2:.1f})" text-anchor="middle">{ylabel}</text>')
-    _save_svg(os.path.join(RESULT_DIR, filename), elems)
+    c.save_png(os.path.join(RESULT_DIR, out_name))
 
 
-def _plot_trend_svg(raw_rows: List[Dict[str, str]]) -> None:
+def _draw_fallback_scatter(raw_rows: List[Dict[str, str]], out_name: str):
     bucket: Dict[str, List[Tuple[float, float]]] = defaultdict(list)
     for r in raw_rows:
         bucket[r["algorithm"]].append((float(r["m"]), float(r["time_s"])))
 
-    width, height = 880, 460
-    margin_l, margin_r, margin_t, margin_b = 70, 25, 45, 60
-    x0, y0 = margin_l, height - margin_b
-    plot_w = width - margin_l - margin_r
-    plot_h = height - margin_t - margin_b
-    colors = {"SA": "#4e79a7", "GA": "#59a14f", "ACO": "#e15759"}
+    colors = {"SA": (78, 121, 167), "GA": (89, 161, 79), "ACO": (225, 87, 89)}
+    w, h = 880, 460
+    ml, mr, mt, mb = 70, 25, 20, 50
+    pw, ph = w - ml - mr, h - mt - mb
+    c = SimpleCanvas(w, h)
+    c.line(ml, h - mb, ml, mt, (0, 0, 0))
+    c.line(ml, h - mb, w - mr, h - mb, (0, 0, 0))
 
-    all_x = [x for pts in bucket.values() for x, _ in pts]
-    all_y = [y for pts in bucket.values() for _, y in pts]
-    xmin, xmax = min(all_x), max(all_x)
-    ymin, ymax = min(all_y), max(all_y)
-    ymin, ymax = min(ymin, 0.0), max(ymax, 1e-9)
+    xs = [x for pts in bucket.values() for x, _ in pts]
+    ys = [y for pts in bucket.values() for _, y in pts]
+    xmin, xmax = min(xs), max(xs)
+    ymin, ymax = min(ys), max(ys)
+    ymin = min(ymin, 0.0)
+    ymax = max(ymax, 1e-9)
 
-    def sx(x: float) -> float:
-        return x0 + (x - xmin) / (xmax - xmin + 1e-9) * plot_w
+    def sx(x: float) -> int:
+        return int(ml + (x - xmin) / (xmax - xmin + 1e-9) * pw)
 
-    def sy(y: float) -> float:
-        return y0 - (y - ymin) / (ymax - ymin + 1e-9) * plot_h
-
-    elems = [_svg_header(width, height)]
-    elems.append('<text x="440" y="24" text-anchor="middle" class="title">Empirical runtime growth trend</text>')
-    elems.append(f'<line x1="{x0}" y1="{y0}" x2="{x0}" y2="{margin_t}" stroke="black"/>')
-    elems.append(f'<line x1="{x0}" y1="{y0}" x2="{width-margin_r}" y2="{y0}" stroke="black"/>')
+    def sy(y: float) -> int:
+        return int(h - mb - (y - ymin) / (ymax - ymin + 1e-9) * ph)
 
     for algo, pts in bucket.items():
         for x, y in pts:
-            elems.append(f'<circle cx="{sx(x):.1f}" cy="{sy(y):.1f}" r="2.6" fill="{colors.get(algo, "#777")}" opacity="0.55"/>')
+            c.circle(sx(x), sy(y), 2, colors.get(algo, (100, 100, 100)))
 
-    # legend
-    lx, ly = width - margin_r - 120, margin_t + 10
-    for i, algo in enumerate(sorted(bucket.keys())):
-        yy = ly + i * 20
-        elems.append(f'<rect x="{lx}" y="{yy-10}" width="14" height="14" fill="{colors.get(algo, "#777")}"/>')
-        elems.append(f'<text x="{lx+20}" y="{yy+1}">{algo}</text>')
-
-    elems.append(f'<text x="{x0 + plot_w/2:.1f}" y="{height-20}" text-anchor="middle">Edge count m</text>')
-    elems.append(f'<text x="20" y="{margin_t + plot_h/2:.1f}" transform="rotate(-90 20,{margin_t + plot_h/2:.1f})" text-anchor="middle">Runtime (s)</text>')
-
-    _save_svg(os.path.join(RESULT_DIR, "trend_time_vs_edges.svg"), elems)
+    c.save_png(os.path.join(RESULT_DIR, out_name))
 
 
+# ---------- matplotlib path ----------
 def plot_group_bars(summary: List[Dict]) -> None:
     groups = sorted({r["group"] for r in summary})
     algos = sorted({r["algorithm"] for r in summary})
@@ -239,11 +253,11 @@ def main() -> None:
     _write_text_report(summary_rows, raw_rows)
 
     if plt is None:
-        _plot_group_bars_svg(summary_rows, "time_mean", "Runtime (s)", "bar_time_mean.svg")
-        _plot_group_bars_svg(summary_rows, "cover_mean", "Cover size", "bar_cover_mean.svg")
-        _plot_group_bars_svg(summary_rows, "gap_mean", "Gap to lower bound", "bar_gap_mean.svg")
-        _plot_trend_svg(raw_rows)
-        print("matplotlib not installed; generated SVG charts and text report in result/")
+        _draw_fallback_bars(summary_rows, "time_mean", "bar_time_mean.png")
+        _draw_fallback_bars(summary_rows, "cover_mean", "bar_cover_mean.png")
+        _draw_fallback_bars(summary_rows, "gap_mean", "bar_gap_mean.png")
+        _draw_fallback_scatter(raw_rows, "trend_time_vs_edges.png")
+        print("matplotlib not installed; generated PNG charts via built-in fallback in result/")
         return
 
     plot_group_bars(summary_rows)
